@@ -5,7 +5,7 @@
 ```
 LANGSMITH_TRACING=true ✓
 LANGSMITH_ENDPOINT=https://api.smith.langchain.com ✓
-LANGSMITH_API_KEY=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 ✓
+LANGSMITH_API_KEY=<ver arquivo .env> ✓
 LANGSMITH_PROJECT=OPSPILOT_SANDBOX_UC08 ✓
 ```
 
