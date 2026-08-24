@@ -1,0 +1,47 @@
+{
+  "analytics-api:prod": {
+    "service_id": "analytics-api",
+    "environment": "prod",
+    "window": "15m",
+    "error_rate_percent": 0.2,
+    "p95_latency_ms": 240,
+    "cpu_percent": 31,
+    "memory_percent": 54,
+    "request_rate_per_min": 820,
+    "permission_cache_hit_percent": 99.4
+  },
+  "payments-api:prod": {
+    "service_id": "payments-api",
+    "environment": "prod",
+    "window": "15m",
+    "error_rate_percent": 18.4,
+    "p95_latency_ms": 4100,
+    "cpu_percent": 72,
+    "memory_percent": 81,
+    "request_rate_per_min": 2200,
+    "db_pool_in_use_percent": 98
+  },
+  "payments-api:staging": {
+    "service_id": "payments-api",
+    "environment": "staging",
+    "window": "15m",
+    "error_rate_percent": 12.0,
+    "p95_latency_ms": 1800,
+    "cpu_percent": 40,
+    "memory_percent": 52,
+    "request_rate_per_min": 400,
+    "db_pool_in_use_percent": 87
+  },
+  "reports-worker:prod": {
+    "service_id": "reports-worker",
+    "environment": "prod",
+    "window": "15m",
+    "error_rate_percent": 0.1,
+    "p95_latency_ms": 780,
+    "cpu_percent": 48,
+    "memory_percent": 76,
+    "queue_depth": 1840,
+    "oldest_message_age_seconds": 1320,
+    "active_workers": 8
+  }
+}

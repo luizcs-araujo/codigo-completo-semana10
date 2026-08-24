@@ -1,0 +1,25 @@
+[
+  {
+    "deployment_id": "DEP-AN-118",
+    "service_id": "analytics-api",
+    "environment": "prod",
+    "version": "2026.07.12",
+    "deployed_at": "2026-07-12T18:00:00-03:00",
+    "status": "success",
+    "changes": [
+      "telemetria"
+    ]
+  },
+  {
+    "deployment_id": "DEP-PAY-204",
+    "service_id": "payments-api",
+    "environment": "prod",
+    "version": "2026.07.14-rc3",
+    "deployed_at": "2026-07-14T13:55:00-03:00",
+    "status": "success",
+    "changes": [
+      "novo pool de conexões",
+      "timeout de checkout"
+    ]
+  }
+]

@@ -1,0 +1,48 @@
+{
+  "analytics-api": {
+    "service_id": "analytics-api",
+    "owner_team": "data-platform",
+    "tier": 1,
+    "runtime": "python-fastapi",
+    "status": "healthy",
+    "regions": [
+      "sa-east-1"
+    ],
+    "dependencies": [
+      "identity-service",
+      "permission-cache",
+      "postgres-analytics"
+    ]
+  },
+  "payments-api": {
+    "service_id": "payments-api",
+    "owner_team": "payments",
+    "tier": 0,
+    "runtime": "java-spring",
+    "status": "degraded",
+    "regions": [
+      "sa-east-1",
+      "us-east-1"
+    ],
+    "dependencies": [
+      "payment-db",
+      "fraud-api",
+      "acquirer-gateway"
+    ]
+  },
+  "reports-worker": {
+    "service_id": "reports-worker",
+    "owner_team": "data-platform",
+    "tier": 2,
+    "runtime": "python-celery",
+    "status": "healthy",
+    "regions": [
+      "sa-east-1"
+    ],
+    "dependencies": [
+      "reports-queue",
+      "object-storage",
+      "analytics-db"
+    ]
+  }
+}

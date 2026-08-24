@@ -1,0 +1,16 @@
+{
+  "analytics-api": {
+    "service_id": "analytics-api",
+    "status": "healthy",
+    "error_rate_percent": 0.2,
+    "p95_latency_ms": 240,
+    "last_deploy": "2026-07-12T18:00:00-03:00"
+  },
+  "payments-api": {
+    "service_id": "payments-api",
+    "status": "degraded",
+    "error_rate_percent": 18.4,
+    "p95_latency_ms": 4100,
+    "last_deploy": "2026-07-14T13:55:00-03:00"
+  }
+}

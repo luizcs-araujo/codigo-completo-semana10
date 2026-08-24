@@ -1,0 +1,20 @@
+# ReleaseGuard — 00_base_clean
+
+Baseline funcional para a semana. Ainda não contém QA com IA, regressão visual automatizada nem SRE agentic.
+
+## Rodar
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+Abra `http://localhost:8000/store` e `http://localhost:8000/docs`.
+
+## Validar
+```bash
+python -m compileall -q .
+pytest -q
+python -m scripts.smoke_base
+```

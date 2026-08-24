@@ -1,0 +1,254 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f8f7ae2a-0e24-4cd0-b352-a793dbeff3e9",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c8be2908-2bdf-4c13-b0a9-bdab00ebe976",
+              "name": "requirement",
+              "value": "Um usuário não pode adicionar ao carrinho uma quantidade maior que o estoque disponível.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "7ffd082b-50c7-4bea-9f7c-a0ada1cbb60b",
+      "name": "Requirements"
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:8000/openapi.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        400,
+        0
+      ],
+      "id": "32fbe0e4-cc6a-41cd-b4a5-b0f5455b7c0c",
+      "name": "API Info"
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:8000/products",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        576,
+        0
+      ],
+      "id": "fe0bd1ff-3342-420d-8914-07db71e7089f",
+      "name": "Products List"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Requisito:\n{{ $('Requirements').item.json.requirement }}\n\nContexto de execução:\n{{ $('API Info').item.json.openapi }}\n{{ $('API Info').item.json.info }}\n{{ $('API Info').item.json.paths }}\n{{ $('API Info').item.json.components }}\n\nProdutos\n{{ $('Products List').all() }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Você é um engenheiro de QA. Gere um plano HTTP mínimo, seguro e diretamente executável. Use somente paths, métodos, corpos e status documentados no OpenAPI fornecido. Use valores concretos do contexto de execução; apenas cart_id e order_id podem ser placeholders, depois dos passos que os criam. O oracle deve estar ancorado no requisito ou no contrato, nunca inventado. Retorne somente o schema solicitado."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        800,
+        0
+      ],
+      "id": "c389b4c9-398e-4298-b32c-0d2f203b99a0",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "qwen3:8b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        704,
+        336
+      ],
+      "id": "eee6a219-c85d-40d4-b683-ae6f543c0cc4",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "4PPt3ufSU3DVEDHK",
+          "name": "Ollama account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"name\": \"Teste de Estoque Insuficiente\",\n  \"intent\": \"Validar que não é possível adicionar quantidade superior ao estoque disponível no carrinho\",\n  \"risk\": \"Permitir adicionar itens com quantidade acima do estoque compromete a integridade dos dados e a disponibilidade do produto\",\n  \"oracle\": \"O sistema deve retornar status 409 quando a quantidade solicitada exceder o estoque disponível\",\n  \"steps\": [\n    {\n      \"name\": \"Criar carrinho\",\n      \"method\": \"POST\",\n      \"path\": \"/cart\",\n      \"json_body\": null,\n      \"expect_status\": 200\n    },\n    {\n      \"name\": \"Adicionar item com quantidade acima do estoque\",\n      \"method\": \"POST\",\n      \"path\": \"/cart/{cart_id}/items\",\n      \"json_body\": {\n        \"product_id\": \"sku-001\",\n        \"quantity\": 4\n      },\n      \"expect_status\": 409\n    }\n  ]\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        864,
+        208
+      ],
+      "id": "be332c27-3cb5-4d0b-b564-340af5efd38f",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "jsCode": "const plan = $json.output; \nconst [create, add] = plan?.steps ?? [];\nif (plan.steps.length !== 2 || create.method !== 'POST' || create.path !== '/cart' || create.expect_status !== 200 || add.method !== 'POST' || add.path !== '/cart/{cart_id}/items' || add.expect_status !== 409 || add.json_body?.product_id !== 'sku-001' || add.json_body?.quantity <= 3) { throw new Error('Generated plan failed deterministic requirement validation'); } return [{ json: plan }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        416
+      ],
+      "id": "7a78c02c-2a86-430c-a89e-14d6bf2a794d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/qa/execute-plan",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1168,
+        0
+      ],
+      "id": "f1ffd07e-592e-4eab-bc70-c3422ba37962",
+      "name": "HTTP Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Requirements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Requirements": {
+      "main": [
+        [
+          {
+            "node": "API Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API Info": {
+      "main": [
+        [
+          {
+            "node": "Products List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Products List": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "0569f985-983b-4e33-b146-3091062e9770",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9e5552fb59e998e77bd7744106a7bd56f1d0c3a7fb27f37e58672e445cb9b5a4"
+  },
+  "nodeGroups": [],
+  "id": "as5UaI2CV33WtN3v",
+  "tags": []
+}

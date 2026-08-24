@@ -1,0 +1,9 @@
+{
+  "change_type": "button_shift",
+  "severity": "low",
+  "affected_region": "[285, 237, 567, 297]",
+  "evidence": [
+    "Visible button shift from baseline to current image: the blue 'Finalizar compra' button in baseline (image 1) is positioned differently in current (image 2), with a noticeable horizontal displacement. The metrics confirm this as pixel_change_ratio=0.0114814453125 and SSIM=0.9869284082954217 indicate minimal visual change but detectable shift in button position."
+  ],
+  "recommendation": "review"
+}

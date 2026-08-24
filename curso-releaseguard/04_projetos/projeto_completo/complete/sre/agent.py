@@ -1,0 +1,42 @@
+from __future__ import annotations
+import json, os, httpx
+from sre.schemas import Incident, InvestigationResult
+from sre.tools.registry import TOOL_SPECS, execute
+
+SYSTEM = (
+    "You are a read-only SRE investigator. Form hypotheses, request only evidence "
+    "needed to test them, revise hypotheses when evidence contradicts them, and "
+    "distinguish symptom, correlation, probable cause, and verified root cause. "
+    "Never claim a verified root cause unless evidence directly supports it. "
+    "You may propose remediation but all mutations require human approval. "
+    "Before concluding a latency investigation, query the documented ReleaseGuard dependency metric, "
+    "list Jaeger services, and query traces using the discovered service name. Do not assume the logical incident service equals service.name."
+)
+
+def _finalize(endpoint:str,model:str,options:dict,messages:list[dict])->InvestigationResult:
+    schema=InvestigationResult.model_json_schema()
+    final_messages=messages+[{'role':'user','content':'Return final investigation JSON matching this schema: '+json.dumps(schema)}]
+    for _ in range(2):
+        rr=httpx.post(endpoint,json={'model':model,'stream':False,'think':False,'options':options,'format':schema,'messages':final_messages},timeout=180)
+        rr.raise_for_status(); content=rr.json()['message'].get('content','')
+        if content.strip(): return InvestigationResult.model_validate_json(content)
+    raise RuntimeError('text model returned empty final investigation after retry')
+
+def investigate(incident:Incident,max_steps:int=6,model:str|None=None,ollama_url:str|None=None,urls:dict|None=None)->InvestigationResult:
+    model=model or os.getenv('OLLAMA_TEXT_MODEL','qwen3:8b')
+    endpoint=(ollama_url or os.getenv('OLLAMA_BASE_URL','http://localhost:11434')).rstrip('/')+'/api/chat'
+    urls=urls or {'prometheus':'http://localhost:9090','jaeger':'http://localhost:16686','app':'http://localhost:8000'}
+    messages=[{'role':'system','content':SYSTEM},{'role':'user','content':incident.model_dump_json()}]
+    options={'temperature':0,'num_ctx':int(os.getenv('OLLAMA_NUM_CTX','32768')),'num_predict':2048}
+    for _ in range(max_steps):
+        payload={'model':model,'stream':False,'think':False,'options':options,'messages':messages,'tools':TOOL_SPECS}
+        r=httpx.post(endpoint,json=payload,timeout=120); r.raise_for_status()
+        msg=r.json()['message']; messages.append(msg)
+        calls=msg.get('tool_calls') or []
+        if not calls:
+            return _finalize(endpoint,model,options,messages)
+        for call in calls:
+            fn=call['function']['name']; args=call['function'].get('arguments',{})
+            result=execute(fn,args,urls)
+            messages.append({'role':'tool','tool_name':fn,'content':json.dumps(result)[:16000]})
+    return _finalize(endpoint,model,options,messages)

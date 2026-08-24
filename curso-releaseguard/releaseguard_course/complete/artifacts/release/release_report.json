@@ -1,0 +1,131 @@
+{
+  "decision": "BLOCK",
+  "reasons": [
+    "active SLO-impacting incident"
+  ],
+  "functional": {
+    "name": "checkout bloqueia quantidade acima do estoque",
+    "passed": true,
+    "steps": [
+      {
+        "name": "criar carrinho",
+        "method": "POST",
+        "path": "/cart",
+        "status": 200,
+        "expected_status": 200,
+        "passed": true,
+        "body": {
+          "id": "cart-001",
+          "items": []
+        }
+      },
+      {
+        "name": "adicionar quantidade inválida",
+        "method": "POST",
+        "path": "/cart/cart-001/items",
+        "status": 409,
+        "expected_status": 409,
+        "passed": true,
+        "body": {
+          "detail": "insufficient stock"
+        }
+      }
+    ]
+  },
+  "visual": {
+    "metrics": {
+      "pixel_change_ratio": 0.0114814453125,
+      "ssim": 0.9869284082954217,
+      "bbox": [
+        285,
+        237,
+        567,
+        297
+      ],
+      "width": 1280,
+      "height": 800
+    },
+    "triage": {
+      "change_type": "button_shift",
+      "severity": "low",
+      "affected_region": "[285, 237, 567, 297]",
+      "evidence": [
+        "Visible button shift from baseline to current image: the blue 'Finalizar compra' button in baseline (image 1) is positioned differently in current (image 2), with a noticeable horizontal displacement. The metrics confirm this as pixel_change_ratio=0.0114814453125 and SSIM=0.9869284082954217 indicate minimal visual change but detectable shift in button position."
+      ],
+      "recommendation": "review"
+    },
+    "policy": "review"
+  },
+  "sre": {
+    "symptom": "latency above expected level",
+    "evidence": [
+      {
+        "source": "metrics",
+        "summary": "ReleaseGuard dependency duration for payment_provider is 0.2536 seconds with 1 count.",
+        "raw": {
+          "resultType": "vector",
+          "result": [
+            {
+              "metric": {
+                "__name__": "releaseguard_dependency_duration_seconds_sum",
+                "dependency": "payment_provider",
+                "instance": "host.docker.internal:8000",
+                "job": "releaseguard"
+              },
+              "value": [
+                1786967465.348,
+                "0.25361775000055786"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "source": "traces",
+        "summary": "A trace with a duration of 253758 microseconds (0.253758 seconds) was found for the payment.request operation.",
+        "raw": {
+          "data": [
+            {
+              "traceID": "8a90833306fa963b838a58693aacb43f",
+              "spans": [
+                {
+                  "traceID": "8a90833306fa963b838a58693aacb43f",
+                  "spanID": "35be42d7bc06b54a",
+                  "operationName": "payment.request",
+                  "startTime": 1786966607194725,
+                  "duration": 253758,
+                  "tags": [
+                    {
+                      "key": "order.id",
+                      "type": "string",
+                      "value": "ord-002"
+                    },
+                    {
+                      "key": "otel.scope.name",
+                      "type": "string",
+                      "value": "releaseguard"
+                    },
+                    {
+                      "key": "span.kind",
+                      "type": "string",
+                      "value": "internal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "probable_cause": "A specific payment.request operation in the ReleaseGuard service is experiencing high latency, which may be causing the observed latency in the checkout service.",
+    "confidence": 0.85,
+    "active_incident": true,
+    "unsupported_claims": [],
+    "remediation_options": [
+      "Investigate the payment.request operation for bottlenecks or errors",
+      "Check for network or dependency issues in the payment_provider service"
+    ],
+    "requires_human": true
+  }
+}

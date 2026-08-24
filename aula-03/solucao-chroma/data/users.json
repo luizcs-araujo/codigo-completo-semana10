@@ -1,0 +1,63 @@
+{
+  "USR-100": {
+    "user_id": "USR-100",
+    "name": "Maria Silva",
+    "roles_source_of_truth": [
+      "sales_manager"
+    ],
+    "roles_in_permission_cache": [
+      "sales_viewer"
+    ],
+    "allowed_resources": [
+      "dashboard:analytics"
+    ],
+    "last_role_change": {
+      "from": "sales_viewer",
+      "to": "sales_manager",
+      "changed_at": "2026-07-14T12:50:00-03:00",
+      "change_id": "ROLE-991"
+    }
+  },
+  "USR-101": {
+    "user_id": "USR-101",
+    "name": "João Pereira",
+    "roles_source_of_truth": [
+      "customer"
+    ],
+    "roles_in_permission_cache": [
+      "customer"
+    ],
+    "allowed_resources": [
+      "checkout"
+    ],
+    "last_role_change": null
+  },
+  "USR-102": {
+    "user_id": "USR-102",
+    "name": "Ana Costa",
+    "roles_source_of_truth": [
+      "report_user"
+    ],
+    "roles_in_permission_cache": [
+      "report_user"
+    ],
+    "allowed_resources": [
+      "report:export"
+    ],
+    "last_role_change": null
+  },
+  "USR-103": {
+    "user_id": "USR-103",
+    "name": "Dev QA",
+    "roles_source_of_truth": [
+      "qa_engineer"
+    ],
+    "roles_in_permission_cache": [
+      "qa_engineer"
+    ],
+    "allowed_resources": [
+      "checkout:staging"
+    ],
+    "last_role_change": null
+  }
+}

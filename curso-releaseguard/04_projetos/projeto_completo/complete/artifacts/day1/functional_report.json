@@ -1,0 +1,29 @@
+{
+  "name": "checkout bloqueia quantidade acima do estoque",
+  "passed": true,
+  "steps": [
+    {
+      "name": "criar carrinho",
+      "method": "POST",
+      "path": "/cart",
+      "status": 200,
+      "expected_status": 200,
+      "passed": true,
+      "body": {
+        "id": "cart-003",
+        "items": []
+      }
+    },
+    {
+      "name": "adicionar quantidade inválida",
+      "method": "POST",
+      "path": "/cart/cart-003/items",
+      "status": 409,
+      "expected_status": 409,
+      "passed": true,
+      "body": {
+        "detail": "insufficient stock"
+      }
+    }
+  ]
+}

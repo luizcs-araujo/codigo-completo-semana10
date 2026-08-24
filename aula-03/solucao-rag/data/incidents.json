@@ -1,0 +1,29 @@
+[
+  {
+    "incident_id": "INC-2026-0618",
+    "service_id": "analytics-api",
+    "environment": "prod",
+    "started_at": "2026-06-18T09:15:00-03:00",
+    "symptoms": [
+      "403 após mudança de role",
+      "cache divergente"
+    ],
+    "root_cause": "cache de autorização não invalidado após migração de roles",
+    "resolution": "invalidação manual aprovada pelo on-call",
+    "status": "resolved"
+  },
+  {
+    "incident_id": "INC-2026-0714",
+    "service_id": "payments-api",
+    "environment": "prod",
+    "started_at": "2026-07-14T13:57:00-03:00",
+    "symptoms": [
+      "503",
+      "latência alta",
+      "checkout"
+    ],
+    "root_cause": "pool de conexões saturado após deploy",
+    "resolution": "rollback aprovado",
+    "status": "monitoring"
+  }
+]

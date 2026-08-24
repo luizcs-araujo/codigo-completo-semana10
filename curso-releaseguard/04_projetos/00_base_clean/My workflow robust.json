@@ -1,0 +1,393 @@
+{
+  "name": "QA Test Plan Generator - Robust",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-1120, 0],
+      "id": "f8f7ae2a-0e24-4cd0-b352-a793dbeff3e9",
+      "name": "When clicking Execute workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b5e311cc-0bb4-4b86-9b66-2d984aac8191",
+              "name": "requirement",
+              "value": "Um usuário não pode adicionar ao carrinho uma quantidade maior que o estoque disponível.",
+              "type": "string"
+            },
+            {
+              "id": "b1729c73-4244-4261-ad3b-cf848f7ed20c",
+              "name": "apiBaseUrl",
+              "value": "http://host.docker.internal:8000",
+              "type": "string"
+            },
+            {
+              "id": "1540a693-0ba4-49b9-8dd4-824dcc422d54",
+              "name": "ollamaBaseUrl",
+              "value": "http://host.docker.internal:11434",
+              "type": "string"
+            },
+            {
+              "id": "54de2ba4-141e-4cc4-8051-bdb116c27fc1",
+              "name": "model",
+              "value": "qwen3:8b",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [-912, 0],
+      "id": "6ba34511-bc83-4359-b15e-e67b91816c3d",
+      "name": "Workflow Config"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Workflow Config').first().json.apiBaseUrl + '/health' }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [-704, 0],
+      "id": "60772a1e-5215-4883-a694-79d23dafcc0a",
+      "name": "API Health"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Workflow Config').first().json.ollamaBaseUrl + '/api/tags' }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [-496, 0],
+      "id": "f5988a82-b6f7-4f92-93cc-967f9cb11864",
+      "name": "Ollama Models"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Workflow Config').first().json.apiBaseUrl + '/openapi.json' }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [-288, 0],
+      "id": "32fbe0e4-cc6a-41cd-b4a5-b0f5455b7c0c",
+      "name": "API Info"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Workflow Config').first().json.apiBaseUrl + '/products' }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [-80, 0],
+      "id": "fe0bd1ff-3342-420d-8914-07db71e7089f",
+      "name": "Products List"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "products",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [128, 0],
+      "id": "28264b70-8d6e-4fb9-b75a-c81eb82505e7",
+      "name": "Aggregate Products"
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $('Workflow Config').first().json;\nconst health = $('API Health').first().json;\nconst tags = $('Ollama Models').first().json;\nconst openapi = $('API Info').first().json;\nconst aggregated = $('Aggregate Products').first().json.products ?? [];\nconst products = aggregated.flatMap(value => Array.isArray(value) ? value : [value]);\n\nif (health.status !== 'ok') {\n  throw new Error(`API indisponível: ${JSON.stringify(health)}`);\n}\n\nconst installedModels = (tags.models ?? []).map(item => item.name ?? item.model);\nif (!installedModels.includes(config.model)) {\n  throw new Error(`Modelo ${config.model} não está instalado no Ollama`);\n}\n\nif (!openapi.paths || Object.keys(openapi.paths).length === 0) {\n  throw new Error('O documento OpenAPI não contém paths');\n}\n\nif (products.length === 0) {\n  throw new Error('A API não retornou produtos para o contexto de execução');\n}\n\nreturn [{\n  json: {\n    requirement: config.requirement,\n    apiBaseUrl: config.apiBaseUrl,\n    model: config.model,\n    openapi,\n    products\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [336, 0],
+      "id": "c9f508a2-7394-450d-bf31-69c745e46928",
+      "name": "Preflight"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Requisito:\n{{ $json.requirement }}\n\nProdutos disponíveis:\n{{ JSON.stringify($json.products) }}\n\nOpenAPI completo:\n{{ JSON.stringify($json.openapi) }}\n\nGere um plano mínimo e executável. Copie os paths literalmente do OpenAPI, sem adicionar prefixos como /api. Crie recursos antes de usar seus placeholders. Use apenas IDs de produtos presentes no contexto.",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Você é um engenheiro de QA especializado em testes HTTP orientados por contrato. Use exclusivamente métodos, paths, corpos e status presentes no OpenAPI fornecido. Nunca invente, pluralize, traduza ou adicione prefixos aos paths. Somente cart_id e order_id podem ser placeholders, e apenas depois de passos que criem esses valores. Use dados concretos do contexto. Para estoque insuficiente, crie o carrinho antes, use um produto existente, envie quantidade maior que o estoque e espere exatamente o status documentado. Retorne somente o objeto solicitado pelo parser."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [560, 0],
+      "id": "c389b4c9-398e-4298-b32c-0d2f203b99a0",
+      "name": "Generate Plan"
+    },
+    {
+      "parameters": {
+        "model": "qwen3:8b",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [768, 512],
+      "id": "eee6a219-c85d-40d4-b683-ae6f543c0cc4",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "4PPt3ufSU3DVEDHK",
+          "name": "Ollama account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"name\": \"Teste de Estoque Insuficiente\",\n  \"intent\": \"Validar que não é possível adicionar quantidade superior ao estoque disponível\",\n  \"risk\": \"Venda acima do estoque e inconsistência de inventário\",\n  \"oracle\": \"A API deve retornar HTTP 409 quando a quantidade exceder o estoque\",\n  \"steps\": [\n    {\n      \"name\": \"Criar carrinho\",\n      \"method\": \"POST\",\n      \"path\": \"/cart\",\n      \"json_body\": null,\n      \"expect_status\": 200\n    },\n    {\n      \"name\": \"Adicionar quantidade superior ao estoque\",\n      \"method\": \"POST\",\n      \"path\": \"/cart/{cart_id}/items\",\n      \"json_body\": {\n        \"product_id\": \"sku-001\",\n        \"quantity\": 99\n      },\n      \"expect_status\": 409\n    }\n  ]\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [976, 512],
+      "id": "be332c27-3cb5-4d0b-b564-340af5efd38f",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nlet plan = input.output ?? input;\nconst context = $('Preflight').first().json;\nconst errors = [];\n\nif (typeof plan === 'string') {\n  try { plan = JSON.parse(plan); } catch { plan = null; errors.push('A saída não é JSON válido'); }\n}\n\nif (!plan || typeof plan !== 'object') {\n  return [{ json: { valid: false, plan, errors: errors.length ? errors : ['Plano ausente'], attempt: 1 } }];\n}\n\nfor (const field of ['name', 'intent', 'risk', 'oracle', 'steps']) {\n  if (plan[field] === undefined || plan[field] === null) errors.push(`Campo obrigatório ausente: ${field}`);\n}\n\nif (!Array.isArray(plan.steps) || plan.steps.length < 1 || plan.steps.length > 8) {\n  errors.push('steps deve conter entre 1 e 8 passos');\n} else {\n  const available = new Set();\n  const allowedPrefixes = ['/products', '/cart', '/checkout', '/payments', '/orders', '/lab/scenarios'];\n  const products = new Map(context.products.map(product => [product.id, product]));\n  const isStockRequirement = context.requirement.toLowerCase().includes('estoque');\n  let stockGuardStepFound = false;\n\n  for (const [index, step] of plan.steps.entries()) {\n    const label = `Passo ${index + 1}`;\n    step.method = String(step.method ?? '').toUpperCase();\n    const operation = context.openapi.paths?.[step.path]?.[step.method.toLowerCase()];\n    const safePath = allowedPrefixes.some(prefix => step.path === prefix || step.path?.startsWith(prefix + '/'));\n\n    if (!['GET', 'POST'].includes(step.method)) errors.push(`${label}: método não permitido: ${step.method}`);\n    if (!safePath) errors.push(`${label}: path não permitido: ${step.path}`);\n    if (!operation) {\n      errors.push(`${label}: ${step.method} ${step.path} não existe no OpenAPI`);\n    } else {\n      if (!operation.responses?.[String(step.expect_status)]) errors.push(`${label}: status ${step.expect_status} não documentado para ${step.method} ${step.path}`);\n      if (operation.requestBody?.required && step.json_body == null) errors.push(`${label}: json_body é obrigatório`);\n    }\n\n    const placeholders = [...String(step.path ?? '').matchAll(/\\{([^}]+)\\}/g)].map(match => match[1]);\n    for (const placeholder of placeholders) {\n      if (!available.has(placeholder)) errors.push(`${label}: {${placeholder}} foi usado antes de ser criado`);\n    }\n\n    if (step.json_body?.product_id && !products.has(step.json_body.product_id)) errors.push(`${label}: produto inexistente: ${step.json_body.product_id}`);\n\n    if (step.method === 'POST' && step.path === '/cart') available.add('cart_id');\n    if (step.method === 'POST' && step.path === '/checkout') available.add('order_id');\n\n    if (step.method === 'POST' && step.path === '/cart/{cart_id}/items') {\n      stockGuardStepFound = true;\n      const product = products.get(step.json_body?.product_id);\n      if (isStockRequirement && step.expect_status !== 409) errors.push(`${label}: estoque insuficiente deve esperar HTTP 409`);\n      if (isStockRequirement && product && !(step.json_body?.quantity > product.stock)) errors.push(`${label}: quantity deve ser maior que o estoque ${product.stock}`);\n    }\n  }\n\n  if (isStockRequirement && !stockGuardStepFound) errors.push('O plano não testa POST /cart/{cart_id}/items');\n}\n\nreturn [{ json: { valid: errors.length === 0, plan, errors, attempt: 1 } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 0],
+      "id": "cd6bded7-96d6-4c93-bcb8-f2688d4b1378",
+      "name": "Validate Plan"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "63999d22-afdb-4b88-95f6-301726056c5a",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1024, 0],
+      "id": "9ea3fd74-3048-4ee2-824a-1b15e183fc09",
+      "name": "Plan Valid?"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=O plano anterior foi rejeitado pela validação semântica.\n\nPlano anterior:\n{{ JSON.stringify($json.plan) }}\n\nErros encontrados:\n{{ JSON.stringify($json.errors) }}\n\nRequisito original:\n{{ $('Preflight').first().json.requirement }}\n\nProdutos disponíveis:\n{{ JSON.stringify($('Preflight').first().json.products) }}\n\nOpenAPI completo:\n{{ JSON.stringify($('Preflight').first().json.openapi) }}\n\nGere novamente o plano completo, corrigindo todos os erros. Copie os paths literalmente do OpenAPI e não explique a resposta.",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Você está corrigindo um plano HTTP inválido. Cada erro fornecido é obrigatório de corrigir. Use exclusivamente operações e status presentes no OpenAPI. Não invente prefixos, rotas, IDs ou status. Crie recursos antes de usar placeholders. Retorne somente o objeto solicitado pelo parser."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [1248, 160],
+      "id": "6336ecef-a9f8-438e-bc26-d03a9b26e7d4",
+      "name": "Repair Plan"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nlet plan = input.output ?? input;\nconst context = $('Preflight').first().json;\nconst errors = [];\n\nif (typeof plan === 'string') {\n  try { plan = JSON.parse(plan); } catch { plan = null; errors.push('A saída não é JSON válido'); }\n}\n\nif (!plan || typeof plan !== 'object') {\n  return [{ json: { valid: false, plan, errors: errors.length ? errors : ['Plano ausente'], attempt: 2 } }];\n}\n\nfor (const field of ['name', 'intent', 'risk', 'oracle', 'steps']) {\n  if (plan[field] === undefined || plan[field] === null) errors.push(`Campo obrigatório ausente: ${field}`);\n}\n\nif (!Array.isArray(plan.steps) || plan.steps.length < 1 || plan.steps.length > 8) {\n  errors.push('steps deve conter entre 1 e 8 passos');\n} else {\n  const available = new Set();\n  const allowedPrefixes = ['/products', '/cart', '/checkout', '/payments', '/orders', '/lab/scenarios'];\n  const products = new Map(context.products.map(product => [product.id, product]));\n  const isStockRequirement = context.requirement.toLowerCase().includes('estoque');\n  let stockGuardStepFound = false;\n\n  for (const [index, step] of plan.steps.entries()) {\n    const label = `Passo ${index + 1}`;\n    step.method = String(step.method ?? '').toUpperCase();\n    const operation = context.openapi.paths?.[step.path]?.[step.method.toLowerCase()];\n    const safePath = allowedPrefixes.some(prefix => step.path === prefix || step.path?.startsWith(prefix + '/'));\n\n    if (!['GET', 'POST'].includes(step.method)) errors.push(`${label}: método não permitido: ${step.method}`);\n    if (!safePath) errors.push(`${label}: path não permitido: ${step.path}`);\n    if (!operation) {\n      errors.push(`${label}: ${step.method} ${step.path} não existe no OpenAPI`);\n    } else {\n      if (!operation.responses?.[String(step.expect_status)]) errors.push(`${label}: status ${step.expect_status} não documentado para ${step.method} ${step.path}`);\n      if (operation.requestBody?.required && step.json_body == null) errors.push(`${label}: json_body é obrigatório`);\n    }\n\n    const placeholders = [...String(step.path ?? '').matchAll(/\\{([^}]+)\\}/g)].map(match => match[1]);\n    for (const placeholder of placeholders) {\n      if (!available.has(placeholder)) errors.push(`${label}: {${placeholder}} foi usado antes de ser criado`);\n    }\n\n    if (step.json_body?.product_id && !products.has(step.json_body.product_id)) errors.push(`${label}: produto inexistente: ${step.json_body.product_id}`);\n\n    if (step.method === 'POST' && step.path === '/cart') available.add('cart_id');\n    if (step.method === 'POST' && step.path === '/checkout') available.add('order_id');\n\n    if (step.method === 'POST' && step.path === '/cart/{cart_id}/items') {\n      stockGuardStepFound = true;\n      const product = products.get(step.json_body?.product_id);\n      if (isStockRequirement && step.expect_status !== 409) errors.push(`${label}: estoque insuficiente deve esperar HTTP 409`);\n      if (isStockRequirement && product && !(step.json_body?.quantity > product.stock)) errors.push(`${label}: quantity deve ser maior que o estoque ${product.stock}`);\n    }\n  }\n\n  if (isStockRequirement && !stockGuardStepFound) errors.push('O plano não testa POST /cart/{cart_id}/items');\n}\n\nreturn [{ json: { valid: errors.length === 0, plan, errors, attempt: 2 } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1472, 160],
+      "id": "7a78c02c-2a86-430c-a89e-14d6bf2a794d",
+      "name": "Validate Repaired Plan"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "18046867-3cc6-4223-b93a-f45480883e47",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1696, 160],
+      "id": "73501fdf-7048-40c6-8bec-1add6551383b",
+      "name": "Repaired Plan Valid?"
+    },
+    {
+      "parameters": {
+        "jsCode": "if (!$json.valid || !$json.plan) {\n  throw new Error('Tentativa de executar um plano que não passou na validação');\n}\n\nreturn [{ json: $json.plan }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1920, -96],
+      "id": "089be636-f057-474b-a53b-5cc26018e973",
+      "name": "Prepare Execute"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Workflow Config').first().json.apiBaseUrl + '/qa/execute-plan' }}",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [2144, -96],
+      "id": "f1ffd07e-592e-4eab-bc70-c3422ba37962",
+      "name": "Execute Plan"
+    },
+    {
+      "parameters": {
+        "errorMessage": "={{ 'O modelo não conseguiu gerar um plano semanticamente válido após a correção: ' + $json.errors.join('; ') }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [1920, 288],
+      "id": "92cc6b4f-05ad-459e-a882-0ef5bde31f2b",
+      "name": "Reject Invalid Plan"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking Execute workflow": {
+      "main": [[{"node": "Workflow Config", "type": "main", "index": 0}]]
+    },
+    "Workflow Config": {
+      "main": [[{"node": "API Health", "type": "main", "index": 0}]]
+    },
+    "API Health": {
+      "main": [[{"node": "Ollama Models", "type": "main", "index": 0}]]
+    },
+    "Ollama Models": {
+      "main": [[{"node": "API Info", "type": "main", "index": 0}]]
+    },
+    "API Info": {
+      "main": [[{"node": "Products List", "type": "main", "index": 0}]]
+    },
+    "Products List": {
+      "main": [[{"node": "Aggregate Products", "type": "main", "index": 0}]]
+    },
+    "Aggregate Products": {
+      "main": [[{"node": "Preflight", "type": "main", "index": 0}]]
+    },
+    "Preflight": {
+      "main": [[{"node": "Generate Plan", "type": "main", "index": 0}]]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [[
+        {"node": "Generate Plan", "type": "ai_languageModel", "index": 0},
+        {"node": "Repair Plan", "type": "ai_languageModel", "index": 0},
+        {"node": "Structured Output Parser", "type": "ai_languageModel", "index": 0}
+      ]]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [[
+        {"node": "Generate Plan", "type": "ai_outputParser", "index": 0},
+        {"node": "Repair Plan", "type": "ai_outputParser", "index": 0}
+      ]]
+    },
+    "Generate Plan": {
+      "main": [[{"node": "Validate Plan", "type": "main", "index": 0}]]
+    },
+    "Validate Plan": {
+      "main": [[{"node": "Plan Valid?", "type": "main", "index": 0}]]
+    },
+    "Plan Valid?": {
+      "main": [
+        [{"node": "Prepare Execute", "type": "main", "index": 0}],
+        [{"node": "Repair Plan", "type": "main", "index": 0}]
+      ]
+    },
+    "Repair Plan": {
+      "main": [[{"node": "Validate Repaired Plan", "type": "main", "index": 0}]]
+    },
+    "Validate Repaired Plan": {
+      "main": [[{"node": "Repaired Plan Valid?", "type": "main", "index": 0}]]
+    },
+    "Repaired Plan Valid?": {
+      "main": [
+        [{"node": "Prepare Execute", "type": "main", "index": 0}],
+        [{"node": "Reject Invalid Plan", "type": "main", "index": 0}]
+      ]
+    },
+    "Prepare Execute": {
+      "main": [[{"node": "Execute Plan", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9bac5638-4629-43a8-b23f-d35d63d13aec",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9e5552fb59e998e77bd7744106a7bd56f1d0c3a7fb27f37e58672e445cb9b5a4"
+  },
+  "tags": []
+}

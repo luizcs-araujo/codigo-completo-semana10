@@ -1,0 +1,43 @@
+[
+  {
+    "event_id": "AUD-001",
+    "subject_id": "USR-100",
+    "timestamp": "2026-07-14T12:50:00-03:00",
+    "event_type": "role_changed",
+    "actor": "iam-sync",
+    "details": {
+      "from": "sales_viewer",
+      "to": "sales_manager"
+    }
+  },
+  {
+    "event_id": "AUD-002",
+    "subject_id": "USR-100",
+    "timestamp": "2026-07-14T13:02:00-03:00",
+    "event_type": "permission_cache_read",
+    "actor": "analytics-api",
+    "details": {
+      "cached_role": "sales_viewer"
+    }
+  },
+  {
+    "event_id": "AUD-003",
+    "subject_id": "ROLE-991",
+    "timestamp": "2026-07-14T12:50:00-03:00",
+    "event_type": "change_approved",
+    "actor": "manager-22",
+    "details": {
+      "scope": "sales_manager"
+    }
+  },
+  {
+    "event_id": "AUD-004",
+    "subject_id": "payments-api",
+    "timestamp": "2026-07-14T13:55:00-03:00",
+    "event_type": "deployment_completed",
+    "actor": "ci-prod",
+    "details": {
+      "deployment_id": "DEP-PAY-204"
+    }
+  }
+]

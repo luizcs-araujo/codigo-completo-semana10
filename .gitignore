@@ -9,7 +9,14 @@ venv/
 
 # Local environment and runtime data
 .env
+.env.*
+!.env.example
 .opspilot/
+.chroma/
+runs/
+*.sqlite
+*.sqlite3
+*.db
 
 # Packaging and test outputs
 build/

@@ -1,0 +1,26 @@
+{
+  "analytics-api": {
+    "service_id": "analytics-api",
+    "environment": "prod",
+    "status": "healthy",
+    "error_rate_percent": 0.2,
+    "p95_latency_ms": 240,
+    "last_deploy": "2026-07-12T18:00:00-03:00"
+  },
+  "payments-api": {
+    "service_id": "payments-api",
+    "environment": "prod",
+    "status": "degraded",
+    "error_rate_percent": 18.4,
+    "p95_latency_ms": 4100,
+    "last_deploy": "2026-07-14T13:55:00-03:00"
+  },
+  "reports-worker": {
+    "service_id": "reports-worker",
+    "environment": "prod",
+    "status": "healthy",
+    "error_rate_percent": 0.1,
+    "p95_latency_ms": 780,
+    "last_deploy": "2026-07-01T10:00:00-03:00"
+  }
+}

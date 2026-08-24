@@ -1,0 +1,271 @@
+{
+  "id": "releaseguard-day1-qa-plan",
+  "name": "ReleaseGuard - Dia 1 - QA Plan",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "req",
+              "name": "requirement",
+              "value": "Um usuário não pode adicionar ao carrinho uma quantidade maior que o estoque disponível.",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "2",
+      "name": "Requirement",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:8000/openapi.json",
+        "options": {}
+      },
+      "id": "3",
+      "name": "Fetch OpenAPI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:8000/products/sku-001",
+        "options": {}
+      },
+      "id": "8",
+      "name": "Fetch Products",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Requisito: {{$node[\"Requirement\"].json[\"requirement\"]}}\\n\\nProduto real: {{ JSON.stringify($json) }}\\n\\nContrato POST /cart: {{ JSON.stringify($node[\"Fetch OpenAPI\"].json[\"paths\"][\"/cart\"]) }}\\n\\nContrato POST /cart/{cart_id}/items: {{ JSON.stringify($node[\"Fetch OpenAPI\"].json[\"paths\"][\"/cart/{cart_id}/items\"]) }}\\n\\nGere exatamente dois passos: crie o carrinho e depois tente adicionar sku-001 com quantity 4. Preserve literalmente {cart_id}. Inclua json_body em ambos os passos; no primeiro use também {\"product_id\":\"sku-001\",\"quantity\":4}, embora o endpoint ignore esse corpo. Espere 200 e depois 409.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Você é um engenheiro de QA. Gere um TestPlan HTTP mínimo, seguro e diretamente executável. Use apenas paths, métodos, corpos e status documentados no OpenAPI. Use produtos reais fornecidos. Crie o carrinho antes de usar {cart_id}. O oracle deve vir do requisito ou contrato."
+        }
+      },
+      "id": "4",
+      "name": "Generate TestPlan",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        680,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "model": "qwen3:8b",
+        "options": {}
+      },
+      "id": "5",
+      "name": "Ollama Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        640,
+        200
+      ],
+      "credentials": {
+        "ollamaApi": {
+          "id": "REPLACE_ME",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\"name\":\"checkout bloqueia excesso\",\"intent\":\"validar estoque\",\"risk\":\"overselling\",\"oracle\":\"HTTP 409 ao exceder estoque\",\"steps\":[{\"name\":\"criar carrinho\",\"method\":\"POST\",\"path\":\"/cart\",\"json_body\":{\"product_id\":\"sku-001\",\"quantity\":4},\"expect_status\":200},{\"name\":\"adicionar quantidade acima do estoque\",\"method\":\"POST\",\"path\":\"/cart/{cart_id}/items\",\"json_body\":{\"product_id\":\"sku-001\",\"quantity\":4},\"expect_status\":409}]}",
+        "autoFix": true
+      },
+      "id": "6",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        820,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const plan = $json.output; const [create, add] = plan?.steps ?? []; if (plan.steps.length !== 2 || create.method !== 'POST' || create.path !== '/cart' || create.expect_status !== 200 || add.method !== 'POST' || add.path !== '/cart/{cart_id}/items' || add.expect_status !== 409 || add.json_body?.product_id !== 'sku-001' || add.json_body?.quantity <= 3) { throw new Error('Generated plan failed deterministic requirement validation'); } return [{ json: plan }];"
+      },
+      "id": "10",
+      "name": "Validation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/qa/execute-plan",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "7",
+      "name": "Execute Plan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        940,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "9",
+      "name": "Report",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Requirement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Requirement": {
+      "main": [
+        [
+          {
+            "node": "Fetch OpenAPI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch OpenAPI": {
+      "main": [
+        [
+          {
+            "node": "Fetch Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Products": {
+      "main": [
+        [
+          {
+            "node": "Generate TestPlan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate TestPlan",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Generate TestPlan",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate TestPlan": {
+      "main": [
+        [
+          {
+            "node": "Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validation": {
+      "main": [
+        [
+          {
+            "node": "Execute Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Plan": {
+      "main": [
+        [
+          {
+            "node": "Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "active": false,
+  "versionId": "00000000-0000-0000-0000-000000000001"
+}

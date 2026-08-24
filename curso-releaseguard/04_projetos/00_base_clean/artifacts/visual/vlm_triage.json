@@ -1,0 +1,11 @@
+{
+  "change_type": "background_color_change",
+  "severity": "low",
+  "affected_region": "[285, 237, 567, 297]",
+  "evidence": [
+    "Background color changed from white to black in current image compared to baseline.",
+    "Button color changed from blue (baseline) to white (current) due to background change.",
+    "Pixel change ratio of 0.01148 indicates minimal pixel differences but visually noticeable due to high contrast change."
+  ],
+  "recommendation": "review"
+}

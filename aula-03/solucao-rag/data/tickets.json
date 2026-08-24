@@ -1,0 +1,50 @@
+{
+  "TCK-4821": {
+    "ticket_id": "TCK-4821",
+    "title": "Erro 403 ao acessar dashboard de analytics",
+    "description": "Maria perdeu acesso ao dashboard depois de receber a role sales_manager.",
+    "user_id": "USR-100",
+    "service_id": "analytics-api",
+    "environment": "prod",
+    "resource": "dashboard:analytics",
+    "error_code": 403,
+    "priority": "high",
+    "opened_at": "2026-07-14T13:40:00-03:00"
+  },
+  "TCK-4822": {
+    "ticket_id": "TCK-4822",
+    "title": "API de pagamentos retorna 503",
+    "description": "Checkout falha de forma intermitente há 20 minutos após deploy.",
+    "user_id": "USR-101",
+    "service_id": "payments-api",
+    "environment": "prod",
+    "resource": "checkout",
+    "error_code": 503,
+    "priority": "critical",
+    "opened_at": "2026-07-14T14:10:00-03:00"
+  },
+  "TCK-4823": {
+    "ticket_id": "TCK-4823",
+    "title": "Falha desconhecida no exportador",
+    "description": "Exportação retorna E-771 apenas para arquivos grandes. Não há runbook conhecido.",
+    "user_id": "USR-102",
+    "service_id": "reports-worker",
+    "environment": "prod",
+    "resource": "report:export",
+    "error_code": "E-771",
+    "priority": "medium",
+    "opened_at": "2026-07-14T15:20:00-03:00"
+  },
+  "TCK-4824": {
+    "ticket_id": "TCK-4824",
+    "title": "403 recorrente após migração de roles",
+    "description": "O time encontrou instruções conflitantes em documentos antigos e novos.",
+    "user_id": "USR-100",
+    "service_id": "analytics-api",
+    "environment": "prod",
+    "resource": "dashboard:analytics",
+    "error_code": 403,
+    "priority": "high",
+    "opened_at": "2026-07-14T16:00:00-03:00"
+  }
+}

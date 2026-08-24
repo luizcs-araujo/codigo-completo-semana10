@@ -1,0 +1,29 @@
+[
+  {
+    "runbook_id": "RB-AN-403",
+    "service_id": "analytics-api",
+    "keywords": [
+      "403",
+      "role",
+      "permissão",
+      "permission",
+      "dashboard",
+      "cache"
+    ],
+    "title": "Erro 403 após alteração de role",
+    "content": "Quando a role no sistema de identidade diverge da role no cache de permissões, o usuário pode receber 403 mesmo tendo acesso válido. Confirme a saúde do serviço, compare a fonte de verdade com o cache e, se a divergência persistir por mais de 15 minutos, solicite invalidação manual do cache. A invalidação é uma ação de escrita e exige aprovação humana."
+  },
+  {
+    "runbook_id": "RB-PAY-503",
+    "service_id": "payments-api",
+    "keywords": [
+      "503",
+      "checkout",
+      "degraded",
+      "deploy",
+      "latência"
+    ],
+    "title": "Picos de 503 após deploy",
+    "content": "Se o erro 503 começar logo após deploy e a taxa de erro superar 10%, recomende rollback ou redução de tráfego. Qualquer rollback exige aprovação do responsável de plantão."
+  }
+]
